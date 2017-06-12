@@ -106,6 +106,132 @@ idx sBioal::remap( sBioal * mutual, sVec<idx> &remappedHits, idx * alSortList ) 
     return remappedHits.dim();
 }
 
+idx sBioal::stableRemap(sBioal * mutual, sVec<idx> &remappedHits, idx al_start,
+		idx al_cnt, idx * alSortList, sBioseqAlignment * l_seqAl) {
+	bool subjectInDifferentlMode =
+			(mutual->Qry->getmode() != Sub->getmode()) ? true : false;
+	//static
+	idx alCnt = 0, iAl = 0, ii = 0, totAl = dimAl();
+	sBioseqAlignment::Al *hdrTo, *hdr, *hdrN;
+	idx * mTo, curSub, curAl;
+	sVec<idx *> sub_ms;
+	sVec<const char *> subs;
+	sBioseqAlignment seqAl, *p_seqAl;
+	if (l_seqAl)
+		p_seqAl = l_seqAl;
+	else {
+		idx seed = 11;
+		seqAl.costMatch = 5;
+		seqAl.costMismatch = -4;
+		seqAl.costMismatchNext = -6;
+		seqAl.costGapOpen = -12;
+		seqAl.costGapNext = -4;
+		seqAl.computeDiagonalWidth = 6 * seed;
+		seqAl.considerGoodSubalignments = 1;
+
+		seqAl.scoreFilter = 0;
+		seqAl.trimLowScoreEnds = 0;
+		seqAl.allowShorterEnds = seqAl.minMatchLen;
+		seqAl.maxExtensionGaps = 0;
+		seqAl.hashStp = seed;
+		seqAl.bioHash.hashStp = 1;
+
+		p_seqAl = &seqAl;
+	}
+	for (idx iSub = 0; iSub < mutual->Qry->dim(); ++iSub) {
+		hdrTo = mutual->getAl(iSub);
+		sub_ms.vadd(1, mutual->getMatch(iSub));
+		subs.vadd(1, mutual->Qry->seq(hdrTo->idQry()));
+
+	}
+	idx substart = 0, subend = 0, sublen = 0, qrystart = 0, qryend = 0, qrylen =
+			0;
+	sVec<idx> uncompressMM;
+	sVec<idx> subjectsCovered(sMex::fSetZero | sMex::fExactSize);
+	idx subdim = Sub->dim();
+
+	if (!al_cnt)
+		al_cnt = totAl;
+	if (subjectInDifferentlMode) {
+		subjectsCovered.resize(Sub->getlongCount());
+		subdim = subjectsCovered.dim();
+	}
+	for (idx iSub = 0; iSub < subdim; ++iSub) {
+		hdrTo = mutual->getAl(iSub);
+		mTo = mutual->getMatch(iSub);
+
+		if (subjectInDifferentlMode) {
+			if (sBioseq::isBioModeLong(mutual->Qry->getmode())) {
+				curSub = mutual->Qry->long2short(hdrTo->idQry());
+				if (subjectsCovered[curSub])
+					continue;
+				++subjectsCovered[curSub];
+			} else {
+				curSub = iSub;
+				idx imS = 0;
+				while (imS < mutual->dimAl()
+						&& mutual->getAl(imS)->idQry() != Sub->long2short(iSub))
+					++imS;
+				if (imS >= mutual->dimAl())
+					return 0;
+				hdrTo = mutual->getAl(imS);
+				mTo = mutual->getMatch(imS);
+			}
+		} else {
+			hdrTo = mutual->getAl(iSub);
+			mTo = mutual->getMatch(iSub);
+			curSub = hdrTo->idQry();
+		}
+		iAl = listSubAlIndex(curSub, &alCnt);
+		if (!iAl) {
+			continue;
+		}
+		if (ii + alCnt - 1 < al_start) {
+			ii += alCnt;
+			continue;
+		} else if (ii >= (al_start + al_cnt))
+			break;
+
+		iAl -= 1;
+		for (idx i = 0; i < alCnt; ++i, ++iAl, ++ii) {
+			if (ii < al_start)
+				continue;
+			if (ii >= (al_start + al_cnt))
+				break;
+			curAl = iAl;
+			if (alSortList) {
+				curAl = alSortList[iAl];
+			}
+			hdr = getAl(curAl);
+			idx * qry_m = getMatch(curAl);
+			substart = sBioseqAlignment::remapQueryPosition(hdrTo, mTo,
+					hdr->getSubjectStart(qry_m), 1);
+			subend = sBioseqAlignment::remapQueryPosition(hdrTo, mTo,
+					hdr->getSubjectEnd(qry_m), 1);
+			sublen = subend - substart + 1;
+			qrystart = hdr->getQueryStart(qry_m);
+			qryend = hdr->getQueryEnd(qry_m);
+			qrylen = qryend - qrystart + 1;
+			const char * qryseq = Qry->seq(hdr->idQry());
+			hdrN = p_seqAl->alignSWProfile(remappedHits, subs.ptr(),
+					sub_ms.ptr(), substart, sublen, subs.dim(), &qryseq, 0,
+					Qry->len(hdr->idQry()), qrystart, qrylen, 1,
+					hdr->flags() | sBioseqAlignment::fAlignGlobal);
+			if (hdrN) {
+				hdrN->ids = hdr->ids;
+				hdrN->setFlags(hdr->flags());
+			}
+
+			if (progress_CallbackFunction) {
+				if (!progress_CallbackFunction(progress_CallbackParam,
+						ii - al_start, 100 * (ii - al_start) / al_cnt, 100))
+					return 0;
+			}
+		}
+	}
+	return remappedHits.dim();
+}
+
 idx sBioal::getConsensus(sStr &out, idx wrap /*= 0*/, idx mode /*= 0*/) {
     idx iVis = 0;
     sVec <idx> resVec(sMex::fSetZero);

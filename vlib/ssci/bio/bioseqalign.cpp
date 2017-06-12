@@ -716,9 +716,6 @@ idx sBioseqAlignment::alignSmithWaterman( sVec < idx > * al, const char * sub, i
 {
 //vioPerf.start("alignSW1");
 
-//    #ifndef sBIO_ATGC_SEQ_2BIT
-//        idx isComp=( (flags&fAlignForwardComplement) && (flags&fAlignForward) ) || ( (flags&fAlignBackwardComplement) &&(flags&fAlignBackward) ) ? true : false;
-//    #endif
 PERF_START("SMITHWATERMANN-PREPARATION");
     if(!qrybuflen)qrybuflen=qrylen;
 
@@ -728,48 +725,35 @@ PERF_START("SMITHWATERMANN-PREPARATION");
     idx SWMatrixWidth=qrylen ;
     ///idx ofsMatrixS=0;
     if(compactSWMatrix && computeDiagonalWidth) {
-        // // // 2015/Feb/14 SWMatrixWidth=computeDiagonalWidth*2;
-        //SWMatrixWidth=computeDiagonalWidth;
         SWMatrixWidth=computeDiagonalWidth*2;
     }
 
     idx sz=(maxSeq+2)*(SWMatrixWidth+1);if(sz<reserve)sz=reserve;
     // // MatSW.resizeM(sz*2+sublen*2); // make sure there is enough space to hold the matrix
-    // // short int * matP=(short int *)MatSW.ptr();
-    // // short int * floatDiag=matP+sz;
     MatSW.resizeM(sz*sizeof(long)+sublen*sizeof(long)); // make sure there is enough space to hold the matrix
     long * matP=(long *)MatSW.ptr();
     long * floatDiag=matP+sz;
-//memset(matP,0,sz*sizeof(short int));
     sz=(maxSeq+1)*SWMatrixWidth;if(sz<reserve)sz=reserve;
     MatBR.resizeM(sz); // this matrix doesn't have the zeroth elements , so it is one less
     char * matB=MatBR.ptr();
-//memset(matB,0,sz*sizeof(char));
 
     // we keep a matrix of for smith waterman algorithm
-    /// /// #define mat(_v_i, _v_j) matP[(SWMatrixWidth+1)*(_v_i)+(_v_j-ofsMatrixS)]
-    /// /// #define bak(_v_i, _v_j) matB[(SWMatrixWidth)*(_v_i)+(_v_j-ofsMatrixS)]
-
     #define mat(_v_i, _v_j) matP[(SWMatrixWidth+1)*(_v_i)+(_v_j)]
     #define bak(_v_i, _v_j) matB[(SWMatrixWidth)*(_v_i)+(_v_j)]
 
-    idx fv,cv=0;//,bestCasePotential;
+    idx fv,cv=0;
     idx maxAll=0, maxAllLastLetter=0; // the maximal score
     idx maxS=0, maxQ=0, maxRowLastLetter=0, maxColLastLetter=0; // maxS,maxQ: the position of the maxAll
 
-//    cellsComputed=0;
     idx qStart=0, qEnd=(flags&fAlignOptimizeDiagonal ) ? computeDiagonalWidth : qrylen; // definition of the diagonal width where we compute
 
     //DEBUG_OUT_SMITHWATERMANN_TABLE_HEADER
 
     idx is, iq ,iFloatingDiagonal;
-    //idx nonCompFlags=(flags&(~(fAlignBackwardComplement|fAlignForwardComplement)));
     idx prevCost=0;
 
 PERF_END();
 
-//vioPerf.end();
-//vioPerf.start("alignSW2");
 #ifdef DEBUGGING_SMITHWATERMANN
 ::printf("   \n\n");
 #endif
@@ -781,7 +765,6 @@ PERF_END();
 
 PERF_START("SMITHWATERMANN-ACTUAL-ALGORITHM");
     for(  is=0, iFloatingDiagonal=0; is<sublen; ++is, ++iFloatingDiagonal ) {
-    //vioPerf.start("alignSW2 - 1 ");
 
         #ifdef old_stile
             idx isx=SIDX( (substart+is) , subbuflen);
@@ -789,19 +772,13 @@ PERF_START("SMITHWATERMANN-ACTUAL-ALGORITHM");
         #else
             idx isx=substart+is;
             idx sBits=(idx)((sub[(isx>>2)]>>((isx&3)<<1))&0x3) ; // this particular base introduces this two bits
-        #endif // oldstyle
-
-        //#else
-        //    idx sBits=sub[isx];
-        //#endif
+        #endif
 
         idx maxRow=0;
         idx maxRowPos=0;
 #ifdef DEBUGGING_SMITHWATERMANN
 ::printf( "%" DEC " %c  :" , is , sBioseq::mapRevATGC[sBits]);
 #endif
-//vioPerf.end();
-//vioPerf.start("alignSW2 - 2 ");
 
         for( iq=qStart; iq<qEnd; ++iq ) {
 
@@ -816,10 +793,6 @@ PERF_START("SMITHWATERMANN-ACTUAL-ALGORITHM");
                 if( complementQ)
                     qBits=sBioseq::mapComplementATGC[qBits];
             #endif
-            //#else
-            //    idx qBits= ( isComp ) ?  sBioseq::mapComplementATGC[(idx)qry[iqx]] : qry[iqx];
-            //#endif
-
 
             cv=mat(is+1,iq+1);
 
@@ -827,17 +800,16 @@ PERF_START("SMITHWATERMANN-ACTUAL-ALGORITHM");
             idx costMMatch=_costMatch( sBits , qBits   );
             fv=mat(is,iq)+costMMatch;
             prevCost=costMMatch;
-            if( cv<=fv ) {cv=fv; bak(is,iq)=3; };// if(is && iq)back(is-1,iq-1)|=0x30; }
+            if( cv<=fv ) {cv=fv; bak(is,iq)=3; };
             // consider insertion
-            fv=mat(is,iq+1)+ ( (is==0 || bak(is-1,iq)==3) ? costGapOpen : costGapNext);//_costMatch(-1, sBits);
-            if( cv<fv ) {cv=fv; bak(is,iq)=1; }// if(is)back(is-1,iq)|=0x30; }
+            fv=mat(is,iq+1)+ ( (is==0 || bak(is-1,iq)==3) ? costGapOpen : costGapNext);
+            if( cv<fv ) {cv=fv; bak(is,iq)=1; }
             // consider deletion
-            fv=mat(is+1,iq)+( (iq==0 || bak(is,iq-1)==3) ? costGapOpen : costGapNext);//_costMatch(sBits,-1);
+            fv=mat(is+1,iq)+( (iq==0 || bak(is,iq-1)==3) ? costGapOpen : costGapNext);
             if( cv<fv ) {cv=fv; bak(is,iq)=2;};// if(iq)back(is,iq-1)|=0x20; }
 
             // is still better to be aligned or start a new one ?
             if(cv>0){
-                // // mat(is+1,iq+1)=(short int)cv;
                 mat(is+1,iq+1)=(long)cv;
 
                 if(cv>=maxRow){ // we remember the Rows maximum value and its position for local alignment
@@ -854,15 +826,13 @@ PERF_START("SMITHWATERMANN-ACTUAL-ALGORITHM");
 #ifdef DEBUGGING_SMITHWATERMANN
 ::printf("\n");
 #endif
-//vioPerf.end();
-//vioPerf.start("alignSW2 - 3 ");
 
         // for global alignments we remember the max score and row for the last letter (all sequence is aligned)
         if( flags&fAlignGlobal) {
             if( maxAllLastLetter< cv ) {
                 maxAllLastLetter=cv;
-                maxRowLastLetter=is; // qEnd-1; //is
-                maxColLastLetter=qEnd-1; // qEnd-1; //is
+                maxRowLastLetter=is;
+                maxColLastLetter=qEnd-1;
             }
         }
 
@@ -878,62 +848,48 @@ PERF_START("SMITHWATERMANN-ACTUAL-ALGORITHM");
                 if(maxRowPos>iFloatingDiagonal)++iFloatingDiagonal;
                 if(maxRowPos<iFloatingDiagonal)--iFloatingDiagonal;
             }
-            //floatDiag[is]=(short int)iFloatingDiagonal;
             floatDiag[is]=(long)iFloatingDiagonal;
 
-            //qStart=is-computeDiagonalWidth;
             qStart=iFloatingDiagonal-computeDiagonalWidth;
             if(qStart<0)qStart=0;
-            //qEnd=is+computeDiagonalWidth;
             qEnd=iFloatingDiagonal+computeDiagonalWidth;
             if(qEnd>qrylen)qEnd=qrylen;
         }
-
-        //DEBUG_OUT_SMITHWATERMANN_TABLE_ROW
 
         if(qStart>=qrylen-1)
             break;
 
     }
-//vioPerf.end();
-//vioPerf.start("alignSW3");
 PERF_END();
 
 PERF_START("SMITHWATERMANN-COINTAINERIZATION");
     //
     // traceback mechanism
     //
-    //al->resizeM(sizeof(Al)/sizeof(idx)); // initialize the header
     idx curofs=al->dim();
     al->addM(sizeof(Al)/sizeof(idx));
     Al * hdr=(Al*)al->ptr(curofs);
     sSet(hdr);
 
-    //hdr->scoreLocal=maxAll;
-    //hdr->scoreGlobal=maxAllLastLetter;
     hdr->setFlags(flags);
 
     if(flags&fAlignGlobal) {
         maxAll=maxAllLastLetter;
         maxS=maxRowLastLetter;
-        maxQ=maxColLastLetter;    // qrylen-1
-        hdr->setScore(maxAllLastLetter);//hdr->scoreGlobal;
+        maxQ=maxColLastLetter;
+        hdr->setScore(maxAllLastLetter);
     }else
-        hdr->setScore(maxAll);//hdr->scoreLocal;
+        hdr->setScore(maxAll);
 
 
-    hdr->setDimAlign(0); // to be counted a little later
+    hdr->setDimAlign(0);
     hdr->setSubStart(substart);
     hdr->setQryStart(qrystart);
-    //hdr->subEnd=maxS+hdr->subStart; // the maximum subject window used for alignment : +1 is because maxS was an index
-    //hdr->qryEnd=maxQ+hdr->qryStart; // qryLen // the maximum query window used for alignment
     if(pLastQryEnd)*pLastQryEnd=maxQ+qrystart+1;
     if(pLastSubEnd)*pLastSubEnd=maxS+substart+1;
 
     if(flags&fAlignReverseEngine){
-        //idx t=hdr->subStart;hdr->subStart=hdr->qryStart;hdr->qryStart=t;
         hdr->starts=sSwapHiLo(hdr->starts);
-//        t=hdr->subEnd;hdr->subEnd=hdr->qryEnd;hdr->qryEnd=t;
     }
 
     //
@@ -943,14 +899,12 @@ PERF_START("SMITHWATERMANN-COINTAINERIZATION");
     idx dlen =1+( (minMatchLen<=0?1:minMatchLen))/(sizeof(idx)*8);
     bool oklocal = false, match = false;
     localBitMatch.resize(dlen);sSet(localBitMatch.ptr(),0,sizeof(idx)*dlen);
-//    idx insideIsGood=0;
 PERF_END();
 
 PERF_START("SMITHWATERMANN-BACKTRACKING");
     for(dlen=0, is=maxS, iq=maxQ, cv=maxAll;  ; cv=mat(is+1,iq+1) , dlen+=2) {  // start walking back on backtrace pointers
         if(flags&fAlignGlobal){ if(iq<0 || is<0) break;} // break when we reach the first letter in global alignment
         else if(cv<=0) break;// break if we reach the 0 score in local alignment
-        //else if(cv<=0 || is<0 || iq<0) break;// break if we reach the 0 score in local alignment
         match = false;
         char bw=bak(is,iq);
         if( (!(flags&fAlignMaxExtendTail)) && cv<costMatch ){ break;} // if we want compact alignment ... no reason to walk left without gaining anything
@@ -1004,7 +958,7 @@ PERF_START("SMITHWATERMANN-FETCHING");
     } else
     {
 
-        idx * m=al->addM(dlen);//+(sizeof(Alignment::Hdr)/sizeof(idx)) ); // this is the real number of elements needed
+        idx * m=al->addM(dlen);// this is the real number of elements needed
         hdr=(Al*)al->ptr(curofs); // because it may have been reallocated
 
         bak(0,0)=3;
@@ -1029,15 +983,9 @@ PERF_START("SMITHWATERMANN-FETCHING");
 
         hdr->setDimAlign(compressAlignment(hdr, m, m ));
         al->cut(curofs+sizeof(sBioseqAlignment::Al)/sizeof(idx)+hdr->dimAlign());
-
-//        hdr->missMatches= ((matchcounters[1]&0xFFFF)) | ((matchcounters[2]&0xFFFF)<<16) | ((matchcounters[3]&0xFFFF)<<32);
-
     }
 
 PERF_END();
-
-//vioPerf.end();
-//vioPerf.start("alignSW4");
 
 PERF_START("SMITHWATERMANN-RECOVERY");
 
@@ -1050,10 +998,8 @@ PERF_START("SMITHWATERMANN-RECOVERY");
             bak(is,iq)=0;
 
             if(flags&fAlignOptimizeDiagonal) {
-                //qStart=is-computeDiagonalWidth;
                 qStart=floatDiag[is]-computeDiagonalWidth;
                 if(qStart<0)qStart=0;
-                //qEnd=is+computeDiagonalWidth;
                 qEnd=floatDiag[is]+computeDiagonalWidth;
                 if(qEnd>qrylen)qEnd=qrylen;
 
@@ -1062,12 +1008,434 @@ PERF_START("SMITHWATERMANN-RECOVERY");
     }
 PERF_END();
 
-//vioPerf.end();
 
 
     return okhit ? 1 : 0 ;
-    #undef mat
+#undef mat
+#undef bak
 }
+
+
+typedef real SWMType;
+
+#define _profile_costMatch(_v_sbits, _v_qbits) (((_v_sbits) != (_v_qbits)) ?costMismatch : costMatch)
+sBioseqAlignment::Al * sBioseqAlignment::alignSWProfile(sVec<idx> & al,
+		const char ** subs, idx ** sub_ms, idx substart, idx sublen, idx subcnt,
+		const char ** qrys, idx ** qry_ms, idx qrybuflen, idx qrystart,
+		idx qrylen, idx qrycnt, idx flags) {
+	idx startFloatingDiagonal = computeDiagonalWidth;
+
+	idx reserve = 1024 * 1024;
+	idx maxSeq = qrylen * 2 + computeDiagonalWidth; /// the maximum number of sequence letters to be considered cannot be bigger than this.
+	idx SWMatrixWidth = qrylen;
+	if ((flags & fAlignOptimizeDiagonal) && computeDiagonalWidth) {
+		SWMatrixWidth = computeDiagonalWidth * 2;
+	}
+
+	idx sz = (maxSeq + 2) * (SWMatrixWidth + 1);
+	if (sz < reserve)
+		sz = reserve;
+
+	MatSW.resizeM(sz * sizeof(SWMType) + (sublen + 1) * sizeof(SWMType)); // make sure there is enough space to hold the matrix
+	SWMType * matP = (SWMType *) MatSW.ptr();
+	long * floatStart = (long*) (matP + sz);
+
+	sz = (maxSeq + 1) * SWMatrixWidth;
+	if (sz < reserve)
+		sz = reserve;
+	MatBR.resizeM(sz); // this matrix doesn't have the zeroth elements , so it is one less
+	char * matB = MatBR.ptr();
+
+#define mat(_v_i, _v_j) matP[(SWMatrixWidth+1)*(_v_i)+((_v_j)-floatStart[(_v_i)])]
+#define bak(_v_i, _v_j) matB[(SWMatrixWidth)*(_v_i)+((_v_j)-floatStart[(_v_i+1)])]
+
+	SWMType fv, cv = 0, costMMatch = 0;
+	;
+	idx maxAll = 0, maxAllLastLetter = 0; // the maximal score
+	idx maxS = 0, maxQ = 0, maxRowLastLetter = 0, maxColLastLetter = 0; // maxS,maxQ: the position of the maxAll
+
+	idx is, isx, iis, *sub_m, iq, iqx, iiq, *qry_m;
+	const char * sub, *qry;
+	idx iFloatingDiagonal;
+
+	idx qStart = 0, qEnd =
+			(flags & fAlignOptimizeDiagonal) ? (SWMatrixWidth + 1) : qrylen;
+	//set back things to zero
+	floatStart[0] = 0;
+	idx initSWvalue = (flags & fAlignGlobal) ? -(REAL_MAX / 2) : 0; //sIdxMax divided by two to prevent the overflow when subtracting gap penalties
+	for (is = 0; is < sublen; ++is) {
+		floatStart[is + 1] = 0;
+		if (flags & fAlignGlobal)
+			mat(is,0)=is*costGapNext;
+		for (iq = 0; iq < (SWMatrixWidth + 1); ++iq) {
+			if ((flags & fAlignGlobal) && is == 0) {
+				mat(0,iq+1)=(iq+1)*costGapNext;
+			}
+			mat(is+1,iq+1)=initSWvalue;
+			bak(is,iq)=0;
+		}
+	}
+	qEnd = (flags & fAlignOptimizeDiagonal) ? computeDiagonalWidth : qrylen; // definition of the diagonal width where we compute
+	idx qbqs = qrybuflen - qrystart - 1;
+	bool complementQ =
+			(((flags & fAlignForwardComplement) && (flags & fAlignForward))
+					|| ((flags & fAlignBackwardComplement)
+							&& (flags & fAlignBackward))) ? true : false;
+
+#ifdef _DBG_PROF_SW
+	sStr dbgout;
+#endif
+	real profSub[5];
+	idx sBits;
+	for (is = 0, iFloatingDiagonal = 0; is < sublen;
+			++is, ++iFloatingDiagonal) {
+		idx maxRow = -sIdxMax;
+		idx maxRowPos = 0;
+		floatStart[is + 1] = qStart;
+#ifdef _DBG_PROF_SW
+		for(iq=0; iq < qStart; ++iq) {
+			dbgout.printf(",");
+		}
+#endif
+		sSet(profSub, 0, 5 * sizeof(real));
+		for (iis = 0; iis < subcnt; ++iis) {
+			sub = subs[iis];
+			sBits = 0;
+			isx = substart + is;
+			if (!sub_ms) {
+				sBits = (idx) ((sub[(isx >> 2)] >> ((isx & 3) << 1)) & 0x3);
+			} else {
+				sub_m = sub_ms[iis];
+				if (sub_m[2 * isx + 1] < 0) {
+					sBits = 4;
+				} else {
+					isx = sub_m[2 * isx + 1];
+					sBits = (idx) ((sub[(isx >> 2)] >> ((isx & 3) << 1)) & 0x3);
+				}
+			}
+			profSub[sBits]++;
+		}
+		for (idx isp = 0; isp < 5; ++isp)
+			profSub[isp] /= subcnt;
+
+		for (iq = qStart; iq < qEnd; ++iq) {
+			costMMatch = 0;
+			for (iis = 0; iis < 5; ++iis) {
+				if (profSub[iis] == 0)
+					continue;
+
+				for (iiq = 0; iiq < qrycnt; ++iiq) {
+					qry = qrys[iiq];
+					idx qBits = -1;
+					if (!qry_ms) {
+						iqx = ((flags & sBioseqAlignment::fAlignBackward) ?
+								(qbqs - iq) : (qrystart + iq));
+						qBits = (idx) ((qry[(iqx >> 2)] >> ((iqx & 3) << 1))
+								& 0x3);
+					} else {
+						qry_m = qry_ms[iiq];
+						if (qry_m[2 * iqx + 1] < 0) {
+							qBits = -2;
+						} else {
+							iqx = sub_m[2 * iqx + 1];
+							qBits = (idx) ((sub[(iqx >> 2)] >> ((iqx & 3) << 1))
+									& 0x3);
+						}
+					}
+					if (complementQ)
+						qBits = sBioseq::mapComplementATGC[qBits];
+
+					// consider a match
+					costMMatch += _profile_costMatch(iis, qBits)
+							* profSub[iis];
+				}
+
+			}
+			costMMatch = costMMatch / qrycnt; //(subcnt*qrycnt);
+			cv = mat(is + 1, iq + 1);
+			fv = mat(is,iq)+costMMatch;
+			if (cv <= fv) {
+				cv = fv;
+				bak(is,iq)=3;};
+			// consider insertion
+			fv = mat(is,iq+1)+ ( (is==0 || bak(is-1,iq)==3) ? costGapOpen : costGapNext);
+			if (cv < fv) {
+				cv = fv;
+				bak(is,iq)=1;}
+			// consider deletion
+			fv = mat(is+1,iq)+( (iq==0 || bak(is,iq-1)==3) ? costGapOpen : costGapNext);
+			if (cv < fv) {
+				cv = fv;
+				bak(is,iq)=2;};
+#ifdef _DBG_PROF_SW
+			dbgout.printf(",%3.2lf",cv);
+#endif
+			// is still better to be aligned or start a new one ?
+			if (cv > 0 || (flags & fAlignGlobal)) {
+				mat(is+1,iq+1)=(SWMType)cv;
+
+				if(cv>=maxRow) { // we remember the Rows maximum value and its position for local alignment
+					maxRow=cv;// it will be useful for exit criteria
+					maxRowPos=iq;
+				}
+			}
+		}
+#ifdef _DBG_PROF_SW
+		dbgout.printf("\n");
+#endif
+		// for global alignments we remember the max score and row for the last letter (all sequence is aligned)
+		if (flags & fAlignGlobal) {
+			maxAllLastLetter = maxRow;
+			maxRowLastLetter = is; // qEnd-1; //is
+			maxColLastLetter = qEnd - 1; // qEnd-1; //is
+//            }
+		}
+
+		// we remember where the maximum score alignment starts
+		if (maxAll < maxRow
+				|| ((flags & fAlignMaxExtendTail) && maxAll == maxRow)) { // for local alignment
+			maxAll = maxRow;
+			maxS = is;
+			maxQ = maxRowPos;
+		}
+
+		if (flags & fAlignOptimizeDiagonal) {
+			if (startFloatingDiagonal != 0 && is > startFloatingDiagonal) {
+				if (maxRowPos > iFloatingDiagonal)
+					++iFloatingDiagonal;
+				if (maxRowPos < iFloatingDiagonal)
+					--iFloatingDiagonal;
+				if ((flags & fAlignGlobal)
+						&& iFloatingDiagonal + computeDiagonalWidth < is) {
+					iFloatingDiagonal++;
+				}
+			}
+			//qStart=is-computeDiagonalWidth;
+			qStart = iFloatingDiagonal - computeDiagonalWidth;
+			if (qStart < 0)
+				qStart = 0;
+			//qEnd=is+computeDiagonalWidth;
+			qEnd = iFloatingDiagonal + computeDiagonalWidth;
+			if (qEnd > qrylen)
+				qEnd = qrylen;
+		}
+
+		if (qStart >= qrylen - 1)
+			break;
+
+	}
+	if (flags & fAlignGlobal) {
+		maxAll = maxAllLastLetter;
+		maxS = maxRowLastLetter;
+		maxQ = maxColLastLetter;
+	}
+
+	return backTracking(&al, substart, sublen, qrystart, qrylen, SWMatrixWidth,
+			(idx) (floatStart - (long*) matP), maxS, maxQ, maxAll, flags);
+#undef mat
+#undef bak
+}
+
+sBioseqAlignment::Al * sBioseqAlignment::backTracking(sVec<idx> * al,
+		idx substart, idx sublen, idx qrystart, idx qrylen, idx SWMatrixWidth,
+		idx floatSZ, idx maxS, idx maxQ, idx maxScore, idx flags) {
+	SWMType * matP = (SWMType *) MatSW.ptr();
+	char * matB = MatBR.ptr();
+
+	long * floatStart = (long *) (matP + floatSZ);
+#define mat(_v_i, _v_j) matP[(SWMatrixWidth+1)*(_v_i)+((_v_j)-floatStart[(_v_i)])]
+#define bak(_v_i, _v_j) matB[(SWMatrixWidth)*(_v_i)+((_v_j)-floatStart[(_v_i+1)])]
+
+	idx curofs = al->dim();
+	al->addM(sizeof(Al) / sizeof(idx));
+	Al * hdr = (Al*) al->ptr(curofs);
+	sSet(hdr);
+
+	hdr->setFlags(flags);
+
+	hdr->setDimAlign(0);
+	hdr->setSubStart(substart);
+	hdr->setQryStart(qrystart);
+
+	if (flags & fAlignReverseEngine) {
+		hdr->starts = sSwapHiLo(hdr->starts);
+	}
+
+	idx matchcounters[4];
+	sSet(matchcounters, 0, sizeof(idx) * 4);
+	idx dlen = 1 + ((minMatchLen <= 0 ? 1 : minMatchLen)) / (sizeof(idx) * 8),
+			is = 0, iq = 0;
+	SWMType cv = 0;
+	bool oklocal = false, match = false;
+	localBitMatch.resize(dlen);
+	sSet(localBitMatch.ptr(), 0, sizeof(idx) * dlen);
+
+	static sVec<idx> tails_window_m(sMex::fSetZero | sMex::fExactSize),
+			tails_window_iq(sMex::fSetZero | sMex::fExactSize), tails_window_is(
+					sMex::fSetZero | sMex::fExactSize);
+	tails_window_m.resize(trimLowScoreEnds);
+	tails_window_iq.resize(trimLowScoreEnds);
+	tails_window_is.resize(trimLowScoreEnds);
+	tails_window_m.set(0);
+	tails_window_iq.set(0);
+	tails_window_is.set(0);
+	idx tails_window_score = 0, iqL = -1, iqR = -1, isL = -1, isR = -1,
+			idL = -1, idR = -1, itw = 0;
+	for (dlen = 0, is = maxS, iq = maxQ, cv = maxScore;;
+			cv = mat(is + 1, iq + 1), dlen += 2) { // start walking back on backtrace pointers
+		if (flags & fAlignGlobal) {
+			if (iq < 0 || is < 0)
+				break;
+		} // break when we reach the first letter in global alignment
+		else if (cv <= 0)
+			break; // break if we reach the 0 score in local alignment
+
+		match = false;
+		char bw = bak(is, iq);
+		if ((!(flags & fAlignMaxExtendTail) && !(flags & fAlignGlobal))
+				&& cv < costMatch) {
+			break;
+		} // if we want compact alignment ... no reason to walk left without gaining anything
+
+		if (bw == 0x02)
+			++matchcounters[2];
+		else if (bw == 0x01)
+			++matchcounters[3];
+		else if (cv < mat(is,iq)+costMatch)++matchcounters[1];
+		else {++matchcounters[0];match=true;}
+
+		if (trimLowScoreEnds > 0) {
+			itw = (dlen / 2) % trimLowScoreEnds;
+			if (dlen >= 2 * trimLowScoreEnds)
+				tails_window_score -= tails_window_m[itw];
+			tails_window_m[itw] = match ? 1 : 0;
+			tails_window_score += tails_window_m[itw];
+			tails_window_iq[itw] = iq;
+			tails_window_is[itw] = is;
+
+			if (dlen >= 2 * trimLowScoreEnds) {
+				if (tails_window_score * 100
+						> trimLowScoreEndsMaxMM * trimLowScoreEnds) {
+					if (iqL < 0
+							&& tails_window_m[(itw + 1) % trimLowScoreEnds]
+									> 0) {
+						idL = dlen - 2 * (trimLowScoreEnds - 1); //inclusive
+						iqL = tails_window_iq[(itw + 1) % trimLowScoreEnds];
+						isL = tails_window_is[(itw + 1) % trimLowScoreEnds];
+					}
+					if (match) {
+						idR = dlen;
+						iqR = iq;
+						isR = is;
+					}
+				}
+			}
+			if (iqL < 0 && match) {
+				idR = dlen;
+				iqR = iq;
+				isR = is;
+			}
+		}
+		if (considerGoodSubalignments == 1 && !oklocal) {
+			if (matchcounters[0] * 100
+					< minMatchLen * (100 - maxMissQueryPercent)) { // because maximum score may have more than allowed number of missmatches : we want to know that inside we have a region satisfying our missmatch criteria
+				idx bitptr = ((dlen / 2) % minMatchLen) / (sizeof(idx) * 8),
+						bitpos =
+								(((dlen / 2) % minMatchLen) % (sizeof(idx) * 8));
+				if (localBitMatch[bitptr] & ((idx) 1 << bitpos)) {
+					--matchcounters[0];
+					if (!match)
+						localBitMatch[bitptr] &= ~((idx) 1 << bitpos);
+				}
+				localBitMatch[bitptr] |= (idx) match << bitpos;
+			} else
+				oklocal = true;
+		}
+		if (!bw)
+			break;
+		if (bw & 0x1)
+			--is;
+		if (bw & 0x2)
+			--iq;
+	}
+
+	bool okhit = true;
+
+	if (trimLowScoreEnds > 0) {
+		if (idL < 0) {
+			dlen = 0;
+			okhit = false;
+		} else {
+			dlen = idR - idL + 2;
+			maxQ = iqL;
+			maxS = isL;
+			maxScore = mat(maxS,maxQ)- mat(isR,iqR);
+		}
+	}
+
+	if (dlen < 2 * minMatchLen) {
+		if (!(flags & fAlignBackward) && maxS + substart + 1 >= sublen - 3
+				&& dlen >= 2 * allowShorterEnds)
+			okhit = true;
+		else if ((flags & fAlignBackward) && substart < 3
+				&& dlen >= 2 * allowShorterEnds)
+			okhit = true; // if the length is short because of the reference boundary ?? do not cut it
+		else
+			okhit = false;
+	} else if (scoreFilter && hdr->score() < scoreFilter)
+		okhit = false;
+
+	else {
+		if (considerGoodSubalignments == 1) {
+			if (!oklocal)
+				okhit = false;
+		} else if (considerGoodSubalignments == 2) {
+			if (matchcounters[0] * 200
+					< 2 * qrylen * (100 - maxMissQueryPercent))
+				okhit = false;
+		} else {
+			if (matchcounters[0] * 200 < dlen * (100 - maxMissQueryPercent))
+				okhit = false;
+		}
+	}
+	if (okhit) {
+		idx * m = al->addM(dlen);
+		hdr = (Al*) al->ptr(curofs); // because it may have been reallocated
+
+		bak(0,0)=3;
+		hdr->setDimAlign(dlen);
+
+		idx qq = 0, ss = 1;
+		if (flags & fAlignReverseEngine) {
+			qq = 1;
+			ss = 0;
+		}
+
+		for (dlen -= 2, is = maxS, iq = maxQ; dlen >= 0; dlen -= 2) { // start walking back on backtrace pointers
+
+			char bw = bak(is, iq);
+
+			m[dlen + qq] = bw == 0x02 ? -1 : is; // here we remember the matching pairs: the fact that subject position goes after
+			m[dlen + ss] = bw == 0x01 ? -1 : iq; // query position is reverted in the next loop during reversal of the array to forward order
+
+			if (bw & 0x1)
+				--is; // backstep
+			if (bw & 0x2)
+				--iq;
+		}
+		hdr->setScore(maxScore);
+		hdr->setLenAlign(hdr->dimAlign() / 2);
+
+		hdr->setDimAlign(compressAlignment(hdr, m, m));
+		al->cut(
+				curofs + sizeof(sBioseqAlignment::Al) / sizeof(idx)
+						+ hdr->dimAlign());
+	}
+	return okhit ? hdr : 0;
+#undef mat
+#undef bak
+}
+
 
 idx sBioseqAlignment::remapAlignment(Al * from, Al * to, idx * mfrom0, idx * mto0 ,idx maxlen,idx readonly,sVec<idx> * lookup )
 {

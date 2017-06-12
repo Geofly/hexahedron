@@ -1,31 +1,12 @@
 /*
- *  ::718604!
- * 
- * Copyright(C) November 20, 2014 U.S. Food and Drug Administration
- * Authors: Dr. Vahan Simonyan (1), Dr. Raja Mazumder (2), et al
- * Affiliation: Food and Drug Administration (1), George Washington University (2)
- * 
- * All rights Reserved.
- * 
- * The MIT License (MIT)
- * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
+ * $Id$ ::2B6A7A!
+ * Copyright (c) 2005 Dr. Vahan Simonyan and Dr. Raja Mazumder.
+ * This software is protected by U.S. Copyright Law and International
+ * Treaties. Unauthorized use, duplication, reverse engineering, any
+ * form of redistribution, use in part or as a whole, other than by
+ * prior, express, written and signed agreement is subject to penalties.
+ * If you have received this file in error, please notify copyright
+ * holder and destroy this and any other copies. All rights reserved.
  */
 
 function vjSVG_Sankey(serie,source)
@@ -417,7 +398,7 @@ function vjSVG_Sankey(serie,source)
     };
 
 
-    this.createCloneConnections=function(cloneA1,cloneB1,state){
+    this.createCloneConnections=function(cloneA1,cloneB1,state,isLink){
         var cordX1=0,cordY1=0,cordX2=0,cordY2=0,indY=0;
         var cloneA = this.getObjbySankeyNode(cloneA1);
         if(!cloneA)return ;
@@ -436,7 +417,6 @@ function vjSVG_Sankey(serie,source)
         
         var cloneAy=cloneA,cloneBy=cloneB;
         var cloneAy1=cloneA1,cloneBy1=cloneB1;
-
         //Ensure that A will be lower than B
         if(cloneA.coordinates[0].y>cloneB.coordinates[0].y){
             cloneAy=cloneB;
@@ -502,7 +482,10 @@ function vjSVG_Sankey(serie,source)
         
         var link= new vjSVG_trajectory(linkSource);
 //        link.brush={fill:'grey',"fill-opacity":1};
-        link.pen={"stroke-opacity":0.2,"stroke-width":2,"stroke":"grey","stroke-linejoin":"round"};
+        var link_color = "grey";
+        if(isLink)
+        	link_color = state?"red":"green";
+        link.pen={"stroke-opacity":0.2,"stroke-width":2,"stroke":link_color,"stroke-linejoin":"round"};
         link.svgID=link.objID;
         link.handler = {
                 'onmouseover' : "function:vjObjFunc('linkMouseOver','" + this.objID + "')",
@@ -1294,7 +1277,7 @@ function vjSVG_Sankey(serie,source)
 //                if( clone._branchEnd > cloneM._end ) {
 //                    alert("Something is wrong in "+clone._branchID+" end:"+clone._end+" merged to:"+cloneM._branchID+"("+cloneM._start+"-"+cloneM._end+") pos:"+clone._branchEnd);
 //                }
-                boxM=this.createCloneConnections(clone,cloneM,1);
+                boxM=this.createCloneConnections(clone,cloneM,1,cloneM!=cloneB);
                 if( boxM )
                     boxArray.push(boxM);
             }
@@ -1304,7 +1287,7 @@ function vjSVG_Sankey(serie,source)
 //                if( clone._branchStart <  cloneB._start ) {
 //                    alert("Something is wrong in "+clone._branchID+" end:"+clone._start+" bifurcated from:"+cloneB._branchID+"("+cloneB._start+"-"+cloneB._end+") pos:"+clone._branchStart);
 //                }
-                boxB=this.createCloneConnections(clone,cloneB,0);
+                boxB=this.createCloneConnections(clone,cloneB,0,cloneM!=cloneB);
                 if( boxB )
                     boxArray.push(boxB);
             }

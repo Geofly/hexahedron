@@ -49,6 +49,7 @@ INSERT INTO `UPType` VALUES (26,'svc-align-dnaseq',0,1,'svc-align-blast','Blast 
 INSERT INTO `UPType` VALUES (27,'svc-dna',0,1,'svc-profiler','Sequence Profiling Engine','Engine to perform coverage analysis ,base-calling, SNP calling ');
 INSERT INTO `UPType` VALUES (28,'svc-align-dnaseq',0,1,'svc-align-bowtie','BowTie Alignment','BowTie alignment engine optimized for HIVE ');
 INSERT INTO `UPType` VALUES (29,'svc-computations-base',0,1,'svc-dna','DNA Services','Services Associates with Sequences and Alignments');
+INSERT INTO `UPType` VALUES (31,'svc-computations-base',0,1,'svc-popul','Clone discovery analysis','Clone discovery tool');
 INSERT INTO `UPType` VALUES (35,'svc-computations-base',0,1,'svc-recomb','Recombination Polyplot Computation Engine','Recombination Polyplot Computation Engine');
 INSERT INTO `UPType` VALUES (40,'svc-align-rnaseq',0,1,'svc-align-tophat','TopHat aligment','TopHat based workflow');
 INSERT INTO `UPType` VALUES (42,'svc-computations-base',0,1,'svc-clust','Hierarchical clustering engine','Hierarchical clustering tool for alignment profiling results');
@@ -169,3 +170,4 @@ INSERT INTO `UPType` VALUES (328,'svc-base-shell-script',0,1,'svc-pipeline-guini
 INSERT INTO `UPType` VALUES (329,'svc-data-loading-base',0,1,'svc-compressor','Data Compression Engine',NULL);
 INSERT INTO `UPType` VALUES (330,'process',1,1,'svc-data-loading-base','data loading','Base type for data loading backends');
 INSERT INTO `UPType` VALUES (331,'process',1,1,'svc-computations-base','computations','Base type for all computations');
+INSERT INTO `UPType` VALUES (341,'svc-computations-base',0,1,'svc-alignment-remapper','Alignment Remapper','Remap alignemts based on the multiple alignment of the subjects');
