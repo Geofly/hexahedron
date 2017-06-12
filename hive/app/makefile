@@ -36,6 +36,7 @@ include $(devdir)/build/makefile.meta
 
 DIST_LIST = \
     dna-cgi dmDownloader \
+    dna-popul dna-alignment-remapper \
     dna-alignment-comparator dna-tnseq \
     dna-hexagon dna-heptagon \
     dna-alignx tblqryX4 \

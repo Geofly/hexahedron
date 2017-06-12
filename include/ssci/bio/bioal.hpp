@@ -241,6 +241,7 @@ class sBioal
         idx iterUnAligned(idx * iVis,idx start, idx cnt,ParamsAlignmentIterator * params);
 
         idx remap( sBioal * mutual, sVec<idx> &remappedHits, idx * alSortList = 0);
+        idx stableRemap( sBioal * mutual, sVec<idx> &remappedHits, idx start = 0, idx cnt = 0, idx * alSortList = 0, sBioseqAlignment * seqAl = 0);
 
         typedef idx (* sBioalSorterFunction)(void * param, void * ob1, void * obj2 , void * objSrc,idx i1,idx i2);
 

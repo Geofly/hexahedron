@@ -206,6 +206,7 @@ namespace slib
         idx looseExtenderMinimumLengthPercent;
         idx maxHitsPerRead;
         idx maxSeedSearchQueryPos;
+        idx trimLowScoreEnds, trimLowScoreEndsMaxMM;
         idx selfSubjectPosJumpInNonPerfectAlignment,selfQueryPosJumpInNonPerfectAlignment;
         idx selfSimilairityBufferSize;
         idx minFragmentLength;
@@ -318,6 +319,8 @@ namespace slib
         }
         idx alignSeq( sVec < idx > * allHits ,sBioseq * Subs, const char * qry, idx qrylen, idx idSub, idx idQry, idx flagset, idx qrysim, idx * subfos=0, idx * qryfos=0);
         idx alignSmithWaterman( sVec < idx > * al, const char * sub, idx substart, idx sublen, const char * qry, idx qrystart, idx qrylen, idx flags, idx subbuflen, idx  qrybuflen, idx startFloatingDiagonal=0, idx * pLastQryEnd=0,  idx * pLastSubEnd=0);
+        Al * alignSWProfile(sVec < idx > & al, const char ** sub, idx ** sub_m, idx substart, idx sublen, idx subcnt, const char ** qry, idx ** qry_m, idx qrybuflen, idx qrystart, idx qrylen, idx qrycnt, idx flags);
+        Al * backTracking(sVec < idx > * allHits, idx substart, idx sublen, idx qrystart, idx qrylen, idx SWMatrixWidth, idx floatSZ, idx maxS, idx maxQ, idx maxAll, idx flags);
         bool align2bioseqDefaultParameters (idx *flags);
 
         enum eReadAlignmentFlags{eAlRelativeToMultiple=0x00000001, eAlKeepGaps=0x00000002, eAlKeepSelfAlignment=0x00000004};
