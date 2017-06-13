@@ -23,7 +23,7 @@ HIVE installation instructions can be [here][hive_readme].
 
 
    [hh_pipeline]: <https://raw.githubusercontent.com/kkaragiannis/hexahedron/master/doc/images/Resized_overview_final_fig.png>
-   [hive_readme]: <https://raw.githubusercontent.com/kkaragiannis/hexahedron/master/HIVE_README.md>
+   [hive_readme]: <https://github.com/kkaragiannis/hexahedron/blob/master/doc/HIVE_README.md>
    [hive_logo]: <https://raw.githubusercontent.com/FDA/fda-hive/master/doc/images/hive_logo.png>
    [hive_git-repo-url]: <https://github.com/FDA/fda-hive>
    [hh_logo]: <https://raw.githubusercontent.com/kkaragiannis/hexahedron/master/doc/images/hexahedron_logo.png>
