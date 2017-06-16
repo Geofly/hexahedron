@@ -19,7 +19,7 @@ Hexahedron itself is open source with a [public repository][hh_git-repo-url] on 
 ### Installation
 
 Hexahedron includes the required code base for HIVE and is installed as an application during HIVE installation. 
-HIVE installation instructions can be [here][hive_readme].
+HIVE installation instructions can be found [here][hive_readme].
 
 
    [hh_pipeline]: <https://raw.githubusercontent.com/kkaragiannis/hexahedron/master/doc/images/Resized_overview_final_fig.png>
