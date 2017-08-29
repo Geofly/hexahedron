@@ -9,7 +9,7 @@ We also offer a novel visualization technique that comprehensively represents th
 ![Pipeline][hh_pipeline]
 
 
-### Requirement
+### Requirements
 
 The algorithm has been implemented as part of [HIVE][hive_git-repo-url] platform, a robust infrastructure for next-generation sequence (NGS) data analysis co-developed by Food and Drug Administration and George Washington University
 [![HIVE][hive_logo]][hive_git-repo-url] 
